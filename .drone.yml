@@ -1,0 +1,29 @@
+pipeline:
+  build:
+    image: docker
+    volumes:
+       - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+       - docker build --pull --no-cache -t starbound-amp-dev .
+
+  test:
+    image: docker
+    volumes:
+       - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+      - docker run -t --rm starbound-amp-dev steamcmd-test 
+      # We cant really test starbound itself, but if amp works it should so \_(ツ)_/¯
+
+  publish:
+    image: docker
+    when:
+      event: [push, tag, deployment]
+    secrets: [ DOCKER_USER, DOCKER_PASS ]
+    volumes:
+       - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+       - docker tag starbound-amp-dev adamant/starbound-amp
+       - docker login -u $DOCKER_USER -p $DOCKER_PASS
+       - docker push adamant/starbound-amp
+       - docker rmi starbound-amp-dev adamant/starbound-amp
+       - echo "CONGRATS! SUCCESSFULLY BUILT ARK:SE AMP!"
